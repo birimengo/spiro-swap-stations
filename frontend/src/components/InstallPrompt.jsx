@@ -2,68 +2,35 @@ import React, { useState, useEffect } from 'react';
 
 const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('Initializing...');
+  const [showButton, setShowButton] = useState(true);
 
   useEffect(() => {
-    // Check if already installed
+    // Check if already installed - hide button completely
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (isStandalone || window.navigator.standalone) {
       console.log('✅ App is already installed');
-      setIsInstalled(true);
-      setDebugInfo('App installed');
+      setShowButton(false);
       return;
     }
-
-    setDebugInfo('Checking PWA status...');
 
     // Listen for beforeinstallprompt
     const handleBeforeInstallPrompt = (e) => {
       console.log('📲 beforeinstallprompt event fired!', e);
       e.preventDefault();
       setDeferredPrompt(e);
-      setDebugInfo('Install ready! Click button');
+      setShowButton(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Listen for app installed
+    // Listen for app installed - hide button immediately
     const handleAppInstalled = () => {
       console.log('✅ App was installed');
       setDeferredPrompt(null);
-      setIsInstalled(true);
-      setDebugInfo('Installed');
+      setShowButton(false);
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Check service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then(reg => {
-        if (reg) {
-          console.log('✅ Service Worker registered');
-          setDebugInfo(prev => prev + ' | SW OK');
-        } else {
-          console.log('❌ No Service Worker');
-          setDebugInfo(prev => prev + ' | No SW');
-        }
-      });
-    }
-
-    // Check manifest
-    fetch('/manifest.json')
-      .then(res => {
-        if (res.ok) {
-          console.log('✅ Manifest found');
-          setDebugInfo(prev => prev + ' | Manifest OK');
-        } else {
-          console.log('❌ Manifest not found');
-          setDebugInfo(prev => prev + ' | No manifest');
-        }
-      })
-      .catch(err => {
-        console.log('❌ Manifest error:', err);
-      });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -77,16 +44,11 @@ const InstallPrompt = () => {
     if (!deferredPrompt) {
       console.log('No deferred prompt available');
       
-      // Try to trigger it manually
-      const event = new Event('beforeinstallprompt');
-      window.dispatchEvent(event);
-      
       // Show instructions
       alert(
         'To install this app:\n\n' +
         '1. Click the browser menu (⋮) in the top-right\n' +
-        '2. Select "Install App" or "Add to Home screen"\n\n' +
-        'If you don\'t see this option, make sure you have icons in the public/icons/ folder'
+        '2. Select "Install App" or "Add to Home screen"'
       );
       return;
     }
@@ -102,6 +64,7 @@ const InstallPrompt = () => {
       if (outcome === 'accepted') {
         console.log('User accepted install');
         setDeferredPrompt(null);
+        setShowButton(false); // Hide button immediately after install
       }
     } catch (error) {
       console.error('Install prompt error:', error);
@@ -109,34 +72,17 @@ const InstallPrompt = () => {
     }
   };
 
-  // Don't show if already installed
-  if (isInstalled) {
-    return (
-      <div className="fixed bottom-4 right-4 bg-green-100 text-green-800 px-4 py-2 rounded-lg shadow-lg text-sm z-50">
-        ✅ App Installed
-      </div>
-    );
-  }
+  // Don't show button if we shouldn't show it
+  if (!showButton) return null;
 
   return (
-    <>
-      {/* Debug info */}
-      <div className="fixed top-16 left-4 bg-black text-white px-3 py-2 rounded text-xs z-50 opacity-90">
-        📱 {debugInfo}
-      </div>
-
-      {/* Install Button */}
-      <button
-        onClick={handleInstallClick}
-        className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-full shadow-2xl transition-all z-50 flex items-center gap-3"
-      >
-        <span className="text-2xl">📱</span>
-        <div className="flex flex-col items-start">
-          <span className="font-bold text-base">Install App</span>
-          <span className="text-xs opacity-90">Add to home screen</span>
-        </div>
-      </button>
-    </>
+    <button
+      onClick={handleInstallClick}
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-green-600 hover:bg-green-700 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-full shadow-lg transition-all z-50 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+    >
+      <span className="text-base sm:text-lg">📱</span>
+      <span className="font-medium">Install</span>
+    </button>
   );
 };
 
