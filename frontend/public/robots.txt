@@ -1,0 +1,13 @@
+# robots.txt for Spiro Swap
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /login/
+Disallow: /api/
+Disallow: /private/
+
+# Sitemap location
+Sitemap: https://spiroswap.com/sitemap.xml
+
+# Crawl delay for slower servers
+Crawl-delay: 1
